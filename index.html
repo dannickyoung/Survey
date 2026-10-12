@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Survey</title>
+  <meta name="description" content="A quick 1-minute survey.">
+  <meta name="theme-color" content="#F4D3CB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Survey">
+  <meta property="og:title" content="Survey">
+  <meta property="og:description" content="A quick 1-minute survey.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preload" href="assets/paper.jpg?v=2" as="image">
+  <link rel="preload" href="assets/envelope.jpg?v=2" as="image">
+  <link rel="preload" href="assets/seal.png?v=1" as="image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playball&family=Homemade+Apple&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap">
+  <link rel="stylesheet" href="style.css?v=1791813804">
+</head>
+<body>
+
+<!-- ENVELOPE INTRO -->
+<div class="intro" id="intro">
+  <svg class="intro-deco" id="introDeco" aria-hidden="true"></svg>
+  <div class="env" id="env">
+    <div class="env-liner"></div>
+    <div class="env-card" id="envCard">
+      <svg class="env-card-frame" id="envCardFrame" aria-hidden="true"></svg>
+      <span class="env-card-eyebrow">Vous êtes invitée</span>
+      <span class="env-card-name" data-c="name"></span>
+      <span class="env-card-rule" aria-hidden="true">♡</span>
+      <span class="env-card-date" data-c="dateShort"></span>
+    </div>
+    <div class="env-sides"><div class="env-side env-side--l"></div><div class="env-side env-side--r"></div></div>
+    <div class="env-bottom-wrap"><div class="env-bottom"></div></div>
+    <div class="env-airmail" aria-hidden="true"></div>
+    <div class="env-post" aria-hidden="true">
+      <span class="par-avion"><b>Par Avion</b><i>By Air Mail</i></span>
+      <svg class="env-postmark" id="postmark"></svg>
+      <svg class="env-stamp" id="stamp"></svg>
+    </div>
+    <div class="env-flap-wrap" id="flap"><div class="env-flap">
+      <div class="env-note" aria-hidden="true">
+        <span>tap the seal to open ♡</span>
+        <svg viewBox="0 0 60 60"><path d="M50 4 C 54 22, 40 34, 18 44"/><path d="M27 34 L17 45 L31 50"/></svg>
+      </div>
+      <div class="env-flap-in"></div>
+    </div></div>
+    <div class="magic-glow" id="glow"></div>
+    <div class="magic-rays" id="rays"></div>
+    <button class="seal" id="seal" aria-label="Open the invitation">
+      <img class="seal-half seal-half--l" src="assets/seal.png?v=1" alt="">
+      <img class="seal-half seal-half--r" src="assets/seal.png?v=1" alt="">
+      <svg class="seal-crack" viewBox="-60 -60 120 120" aria-hidden="true"><path pathLength="1" d="M4 -50 L-3 -26 L6 -8 L-5 12 L3 30 L-2 50"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Shared SVG filters -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="bevel" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="1.1" result="b"/>
+      <feDiffuseLighting in="b" surfaceScale="2.2" diffuseConstant="1" lighting-color="#fff" result="diff">
+        <feDistantLight azimuth="225" elevation="50"/>
+      </feDiffuseLighting>
+      <feSpecularLighting in="b" surfaceScale="2.2" specularConstant=".8" specularExponent="20" lighting-color="#fff" result="spec">
+        <feDistantLight azimuth="225" elevation="45"/>
+      </feSpecularLighting>
+      <feComposite in="SourceGraphic" in2="diff" operator="arithmetic" k1="1.28" result="lit"/>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+      <feComposite in="specIn" in2="lit" operator="arithmetic" k2=".4" k3="1" result="out"/>
+      <feComposite in="out" in2="SourceAlpha" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<main class="book" id="book">
+
+  <section class="page" data-deco="cover" aria-label="Invitation">
+    <svg class="deco" aria-hidden="true"></svg>
+    <div class="content"><div class="stack">
+      <p class="eyebrow rise" style="--d:1">Vous êtes invitée</p>
+      <p class="lede rise" style="--d:2">Hey Bestie, you're invited to a day all about</p>
+      <h1 class="script huge hand" style="--base:700ms" data-c="name"></h1>
+      <p class="lede rise" style="--d:9"><em>&amp; her birthday</em></p>
+      <p class="date rise" style="--d:10" data-c="dateLong"></p>
+      <p class="small rise" style="--d:11" data-c="tagline"></p>
+    </div></div>
+    <p class="swipe-hint" aria-hidden="true">swipe for next <span>→</span></p>
+  </section>
+
+  <section class="page" data-deco="letter" aria-label="A letter for you">
+    <svg class="deco" aria-hidden="true"></svg>
+    <div class="content"><div class="stack">
+      <h2 class="script title hand greeting" style="--base:150ms" data-c="letterGreeting"></h2>
+      <div class="letter" id="letter"></div>
+      <p class="script signoff hand" id="signoff" data-c="letterClose"></p>
+      <p class="script signature hand" id="from" data-c="from"></p>
+    </div></div>
+    <p class="swipe-hint" aria-hidden="true">swipe for next <span>→</span></p>
+  </section>
+
+  <section class="page" data-deco="wishes" aria-label="My wishes for you">
+    <svg class="deco" aria-hidden="true"></svg>
+    <div class="content"><div class="stack">
+      <h2 class="script title hand" style="--base:200ms">Mes vœux</h2>
+      <p class="small rise" style="--d:3">for your new year · tap each one</p>
+      <div class="tiles" id="tiles"></div>
+    </div></div>
+    <p class="swipe-hint" aria-hidden="true">swipe for next <span>→</span></p>
+  </section>
+
+  <section class="page" data-deco="brunch" aria-label="Lunch details">
+    <svg class="deco" aria-hidden="true"></svg>
+    <div class="content"><div class="stack">
+      <p class="lede rise" style="--d:1">First, we eat.</p>
+      <h2 class="script title hand" style="--base:250ms">Le Déjeuner</h2>
+      <svg class="food pop" id="food" viewBox="0 0 330 120" aria-hidden="true"></svg>
+      <p class="date rise" style="--d:6"><span data-c="dateShort"></span> · <span data-c="brunch.time"></span></p>
+      <p class="venue rise" style="--d:7" data-c="brunch.venue"></p>
+      <p class="small rise" style="--d:8" data-c="brunch.address"></p>
+      <a class="maplink rise" style="--d:10" id="maplink" target="_blank" rel="noopener" hidden>Open in Maps</a>
+    </div></div>
+    <p class="swipe-hint" aria-hidden="true">swipe for next <span>→</span></p>
+  </section>
+
+  <section class="page" data-deco="mystery" aria-label="The mystery activity">
+    <svg class="deco" aria-hidden="true"></svg>
+    <div class="content"><div class="stack">
+      <p class="lede rise" style="--d:1">And then…</p>
+      <h2 class="script title hand" style="--base:250ms">Le Mystère</h2>
+      <p class="small rise" style="--d:5">Scratch the card to reveal a clue</p>
+      <div class="scratch rise" style="--d:6">
+        <svg class="scratch-frame" aria-hidden="true"></svg>
+        <div class="scratch-under">
+          <p class="script reveal-big" data-c="mystery.headline"></p>
+          <p class="reveal-text" data-c="mystery.clue"></p>
+        </div>
+        <canvas id="scratch" aria-label="Scratch card. Rub to reveal." role="img"></canvas>
+      </div>
+      <p class="script farewell rise" style="--d:8" data-c="mystery.farewell"></p>
+    </div></div>
+  </section>
+
+</main>
+
+<button class="back" id="prev" aria-label="Previous page" hidden>
+  <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M33 21 C 25 19.5, 17 20.5, 8 20"/><path d="M15 12 C 12 15, 9 18, 7.5 20.2 C 10 22.5, 13 25.5, 15.5 28.5"/></svg>
+</button>
+<nav class="nav" id="nav" aria-label="Pages">
+  <div class="dots" id="dots"></div>
+</nav>
+
+<div class="flash" id="flash"></div>
+<canvas class="fx" id="fx" aria-hidden="true"></canvas>
+<script src="draw.js?v=1791813804"></script>
+<script src="sfx.js?v=1791813804"></script>
+<script src="script.js?v=1791813804"></script>
+</body>
+</html>

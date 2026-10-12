@@ -1,0 +1,9 @@
+{
+  "name": "Survey",
+  "short_name": "Survey",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F3CFC8",
+  "theme_color": "#F3CFC8",
+  "icons": [{ "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
