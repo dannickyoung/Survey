@@ -92,6 +92,69 @@ if (CONFIG.brunch.mapUrl) { const a = $("#maplink"); a.href = CONFIG.brunch.mapU
 
 /* ---------- Hand-drawn decoration (redrawn to fit the screen) ---------- */
 const pages = $$(".page");
+/* ---------- Bake the hand-drawn art into flat images ----------
+   The SVG drawings use turbulence filters for the wobbly ink/watercolour look. Phones re-run those
+   filters on every animation frame, so each drawing is rendered once into a bitmap and the live SVG hidden. */
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const SVG_NS = "http://www.w3.org/2000/svg";
+const sheetTexture = new Image();
+sheetTexture.src = "assets/paper.jpg?v=2";
+const textureReady = new Promise((resolve) => {
+  if (sheetTexture.complete) resolve();
+  else { sheetTexture.onload = resolve; sheetTexture.onerror = resolve; }
+});
+
+function svgToImage(svg, scale = 1) {
+  const vb = svg.viewBox.baseVal;
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", SVG_NS);
+  clone.setAttribute("width", vb.width * scale);
+  clone.setAttribute("height", vb.height * scale);
+  ["class", "style", "hidden", "id"].forEach((a) => clone.removeAttribute(a));
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml" }));
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// whole-screen sheet: stock colour × paper texture × vignette × drawing, flattened into one canvas
+async function bakeSheet(host, svg, w, h, color) {
+  try {
+    const [art] = await Promise.all([svgToImage(svg, DPR), textureReady]);
+    let cv = host.querySelector(":scope > canvas.sheet");
+    if (!cv) { cv = document.createElement("canvas"); cv.className = "sheet"; cv.setAttribute("aria-hidden", "true"); host.prepend(cv); }
+    cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+    const x = cv.getContext("2d");
+    x.setTransform(DPR, 0, 0, DPR, 0, 0);
+    x.fillStyle = color; x.fillRect(0, 0, w, h);
+    x.globalCompositeOperation = "multiply";
+    if (sheetTexture.naturalWidth) for (let ty = 0; ty < h; ty += 380) for (let tx = 0; tx < w; tx += 380) x.drawImage(sheetTexture, tx, ty, 380, 380);
+    const v = x.createRadialGradient(w * 0.45, h * 0.35, 0, w * 0.45, h * 0.35, Math.hypot(w, h) * 0.75);
+    v.addColorStop(0, "#fff"); v.addColorStop(0.5, "#fff"); v.addColorStop(1, "rgba(130,60,50,.16)");
+    x.fillStyle = v; x.fillRect(0, 0, w, h);
+    x.drawImage(art, 0, 0, w, h);
+    svg.setAttribute("hidden", "");   // SVG elements ignore the .hidden property; the attribute works
+    host.classList.add("baked");
+  } catch (e) { /* keep the live SVG if baking fails */ }
+}
+
+// small drawings (frames, food): swap the live SVG for an <img> of itself
+async function bakeInline(svg) {
+  try {
+    const img = await svgToImage(svg);
+    img.className = `${svg.getAttribute("class") || ""} baked-svg`.trim();
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    if (svg._baked) svg._baked.remove();
+    svg.before(img);
+    svg._baked = img;
+    svg.setAttribute("hidden", "");   // SVG elements ignore the .hidden property; the attribute works
+  } catch (e) { /* keep the live SVG */ }
+}
+
 const backSpots = [];
 function drawAll() {
   pages.forEach((p, i) => {
@@ -122,6 +185,10 @@ function drawAll() {
   });
   const sc = $(".scratch");
   Draw.frame($(".scratch-frame"), sc.offsetWidth, sc.offsetHeight, 300, true);
+
+  pages.forEach((p) => bakeSheet(p, $(".deco", p), p.clientWidth, p.clientHeight, getComputedStyle(p).backgroundColor));
+  $$(".tile-face svg").forEach((svg) => bakeInline(svg));
+  bakeInline($(".scratch-frame"));
 }
 
 /* ---------- Pages & navigation ---------- */
@@ -166,33 +233,12 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") go(current - 1);
 });
 
-// swipe left = forward, swipe right = back — touch, mouse drag and trackpad
-let sx = 0, sy = 0, tracking = false;
+// tap anywhere on a page for the next one (buttons, links, wish cards and the scratch card keep their own taps)
 const book = $("#book");
-const ignoreSwipe = (t) => t.closest && t.closest("#scratch");
-function endSwipe(x, y) {
-  if (!tracking) return;
-  tracking = false;
-  const dx = x - sx, dy = y - sy;
-  if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-    suppressClick = true;
-    setTimeout(() => (suppressClick = false), 80);
-    go(current + (dx < 0 ? 1 : -1));
-  }
-}
-// touch events are not cancelled by the browser's scroll detection the way pointer events are
-book.addEventListener("touchstart", (e) => {
-  if (ignoreSwipe(e.target) || e.touches.length > 1) return;
-  tracking = true; sx = e.touches[0].clientX; sy = e.touches[0].clientY;
-}, { passive: true });
-book.addEventListener("touchend", (e) => { const t = e.changedTouches[0]; endSwipe(t.clientX, t.clientY); }, { passive: true });
-book.addEventListener("touchcancel", (e) => { const t = e.changedTouches[0]; endSwipe(t.clientX, t.clientY); }, { passive: true });
-// mouse drag on desktop
-book.addEventListener("pointerdown", (e) => {
-  if (e.pointerType !== "mouse" || ignoreSwipe(e.target)) return;
-  tracking = true; sx = e.clientX; sy = e.clientY;
+book.addEventListener("click", (e) => {
+  if (e.target.closest("button, a, #scratch, .tile")) return;
+  if (current < pages.length - 1) go(current + 1);
 });
-book.addEventListener("pointerup", (e) => { if (e.pointerType === "mouse") endSwipe(e.clientX, e.clientY); });
 // two-finger trackpad swipe on a Mac
 let wheelX = 0, wheelLock = 0;
 book.addEventListener("wheel", (e) => {
@@ -219,16 +265,23 @@ const FX = (() => {
   size();
   addEventListener("resize", size);
 
+  // one pre-rendered glowing star, stamped with drawImage (no per-frame gradients)
+  const STAR = (() => {
+    const S = 64, c = document.createElement("canvas"); c.width = c.height = S;
+    const g = c.getContext("2d"), m = S / 2;
+    const glow = g.createRadialGradient(m, m, 0, m, m, m);
+    glow.addColorStop(0, "rgba(255,240,200,.9)"); glow.addColorStop(1, "rgba(255,210,150,0)");
+    g.fillStyle = glow; g.fillRect(0, 0, S, S);
+    const r = S * 0.22;
+    g.fillStyle = "#fff"; g.beginPath();
+    g.moveTo(m, m - r); g.quadraticCurveTo(m, m, m + r, m); g.quadraticCurveTo(m, m, m, m + r);
+    g.quadraticCurveTo(m, m, m - r, m); g.quadraticCurveTo(m, m, m, m - r); g.fill();
+    return c;
+  })();
   function star(x, y, s, a) {
     cx.globalAlpha = a;
-    const g = cx.createRadialGradient(x, y, 0, x, y, s * 2.2);
-    g.addColorStop(0, "rgba(255,240,200,.9)"); g.addColorStop(1, "rgba(255,210,150,0)");
-    cx.fillStyle = g; cx.beginPath(); cx.arc(x, y, s * 2.2, 0, 7); cx.fill();
-    cx.fillStyle = "#fff";
-    cx.beginPath();
-    cx.moveTo(x, y - s); cx.quadraticCurveTo(x, y, x + s, y); cx.quadraticCurveTo(x, y, x, y + s);
-    cx.quadraticCurveTo(x, y, x - s, y); cx.quadraticCurveTo(x, y, x, y - s);
-    cx.fill();
+    const d = s * 4.5;
+    cx.drawImage(STAR, x - d / 2, y - d / 2, d, d);
   }
   function heart(x, y, s) {
     cx.beginPath(); cx.moveTo(x, y - s * 0.2);
@@ -420,7 +473,7 @@ function reveal() {
   revealed = true;
   sc.classList.add("gone");
   const r = sc.getBoundingClientRect();
-  FX.confetti(r.left + r.width / 2, r.top + r.height / 2, 110);
+  FX.confetti(r.left + r.width / 2, r.top + r.height / 2, 70);
   FX.sparkle(r.left + r.width / 2, r.top + r.height / 2, 40, r.width / 2);
   Sfx.twinkle();
 }
@@ -437,14 +490,17 @@ sc.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") 
 /* ---------- Boot ---------- */
 Draw.stamp($("#stamp"));
 Draw.food($("#food"));
+bakeInline($("#food"));
 const ec = $("#envCard");
-const drawEnvCard = () => Draw.frame($("#envCardFrame"), ec.offsetWidth, ec.offsetHeight, 77, false);
+const drawEnvCard = () => { Draw.frame($("#envCardFrame"), ec.offsetWidth, ec.offsetHeight, 77, false); bakeInline($("#envCardFrame")); };
 drawEnvCard();
 addEventListener("resize", drawEnvCard);
-const drawBackdrop = () => Draw.backdrop($("#introDeco"), innerWidth, innerHeight);
+const drawBackdrop = () => { Draw.backdrop($("#introDeco"), innerWidth, innerHeight); bakeSheet($("#intro"), $("#introDeco"), innerWidth, innerHeight, "#EDC3BB"); };
 drawBackdrop();
 addEventListener("resize", drawBackdrop);
 Draw.postmark($("#postmark"), "JOYEUX ANNIVERSAIRE · BISOUS · ");
+bakeInline($("#stamp"));
+bakeInline($("#postmark"));
 go(0, { animate: false });
 drawAll();
 paintScratch();
